@@ -8,6 +8,7 @@ import (
 	"github.com/vinneth/go-webchat/config"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 var (
@@ -23,18 +24,22 @@ var (
 )
 
 func Connect() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	clientOptions := options.Client().ApplyURI(config.AppConfig.MongoDBURI)
-	
+	// Set Server API version for MongoDB Atlas
+	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
+	clientOptions := options.Client().
+		ApplyURI(config.AppConfig.MongoDBURI).
+		SetServerAPIOptions(serverAPI)
+
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		return err
 	}
 
 	// Ping the database to verify connection
-	if err := client.Ping(ctx, nil); err != nil {
+	if err := client.Ping(ctx, readpref.Primary()); err != nil {
 		return err
 	}
 
